@@ -2,6 +2,8 @@
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TasksModule } from './tasks/tasks.module';
@@ -16,8 +18,12 @@ import { TasksModule } from './tasks/tasks.module';
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
       sortSchema: true,
-      playground: false,
-      introspection: true,
+      playground: false, // disable old Playground
+      introspection: true, // keep for dev
+      // csrfPrevention: false, // (optional) you can disable CSRF in dev
+     // csrfPrevention: false, // <— dev only
+
+      plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],

@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { CreateTaskInput } from './dto/create-task.input';
 import { UpdateTaskInput } from './dto/update-task.input';
+import { Task } from './entities/task.entity';
 import { TaskDocument } from './task.schema';
 
 @Injectable()
@@ -34,12 +39,28 @@ export class TasksService {
     return updated;
   }
 
-  async remove(id: string) {
-    const res = await this.taskModel.findByIdAndDelete(id).exec();
-    if (!res) throw new NotFoundException('Task not found');
-    return true;
-  }
+  async remove(id: string): Promise<Task> {
+    if (!isValidObjectId(id)) {
+      console.log('Invalid id:', id);
 
+      throw new BadRequestException('Invalid task id');
+    }
+
+    console.log("remove", { id });
+
+    const doc = await this.taskModel.findById(id);
+
+    const res = await this.taskModel.findByIdAndDelete(id).exec();
+
+    if (!doc) {
+      console.log('Task not found', doc, res);
+      throw new NotFoundException('Task not found');
+    }
+
+    // If you use virtual id/toJSON in your schema this is fine to return directly.
+    // Otherwise: return doc.toObject();
+    return doc as unknown as Task;
+  }
   async toggle(id: string) {
     const task = await this.findOne(id);
     task.completed = !task.completed;
