@@ -4,12 +4,12 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-   app.enableCors({
+  app.enableCors({
     origin: [
-      'http://localhost:3000',  // same-origin calls
-      'http://localhost:5173',  // e.g. Vite dev server (adjust as needed)
-       /https:\/\/.*\.ngrok-free\.app$/,         // any ngrok url
-      'https://chaplygindenys.github.io',      // GH Pages domain (optional)
+      'http://localhost:3000', // same-origin calls
+      'http://localhost:5173', // e.g. Vite dev server (adjust as needed)
+      /https:\/\/.*\.ngrok-free\.app$/, // any ngrok url
+      'https://chaplygindenys.github.io', // GH Pages domain (optional)
     ],
     methods: ['GET', 'POST', 'OPTIONS'],
     credentials: true,
@@ -25,7 +25,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // tiny request logger to see callers/origins quickly
-  app.use((req: any, _res: any, next:any) => {
+  app.use((req: any, _res: any, next: any) => {
     console.log(
       `[${req.method}] ${req.originalUrl} Origin=${req.headers.origin ?? '-'}`,
     );

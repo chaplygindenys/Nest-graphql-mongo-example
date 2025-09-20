@@ -48,6 +48,8 @@ export class TasksService {
   }
 
   async update(input: UpdateTaskInput): Promise<TaskDTO> {
+    console.log('update input ', input);
+
     const doc = await this.taskModel
       .findByIdAndUpdate(input.id, input, { new: true })
       .exec();

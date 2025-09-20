@@ -1,6 +1,7 @@
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable, PipeTransform } from '@nestjs/common';
 import {
   Args,
+  Context,
   ID,
   Mutation,
   Query,
@@ -12,6 +13,14 @@ import { CreateTaskInput } from './dto/create-task.input';
 import { UpdateTaskInput } from './dto/update-task.input';
 import { Task } from './entities/task.entity';
 import { TasksService } from './tasks.service';
+
+@Injectable()
+class LogArgsPipe implements PipeTransform {
+  transform(value: any) {
+    console.log('[pipe] args before DTO:', value);
+    return value;
+  }
+}
 
 @Resolver(() => Task)
 export class TasksResolver {
@@ -39,8 +48,11 @@ export class TasksResolver {
 
   @Mutation(() => Task)
   updateTask(
-    @Args('input', { type: () => UpdateTaskInput }) input: UpdateTaskInput,
+    @Args('input', new LogArgsPipe()) input: UpdateTaskInput,
+    @Context() ctx: any, // optional: to see req.body too
   ) {
+    console.log('[resolver] updateTask input:', input); // what the DTO sees
+    console.log('[resolver] raw variables:', ctx?.req?.body?.variables); // raw vars
     return this.service.update(input);
   }
 
