@@ -24,26 +24,24 @@ export class TasksService {
   ) {}
 
   async findAll(): Promise<TaskDTO[]> {
-    const docs = await this.taskModel
-      .find()
-      .sort({ createdAt: -1 })
-      .lean({ virtuals: true }) // ensure 'id' + timestamps on plain objects
-      .exec();
+    const docs = await this.taskModel.find().sort({ createdAt: -1 });
+
+    console.log('virtuals', docs);
+
     return (docs as TaskLean[]).map(toTaskDTO);
   }
 
   async findOne(id: string): Promise<TaskDTO> {
-    const doc = await this.taskModel
-      .findById(id)
-      .lean({ virtuals: true })
-      .exec();
+    const doc = await this.taskModel.findById(id).exec();
     if (!doc) throw new NotFoundException('Task not found');
     return toTaskDTO(doc as TaskLean);
   }
 
   async create(input: CreateTaskInput): Promise<TaskDTO> {
     const created = await this.taskModel.create(input);
-    const obj = created.toObject({ virtuals: true }) as TaskLean;
+    const obj = created.toObject({ virtuals: true, getters: true }) as TaskLean;
+
+    console.log('created', created);
     const dto = toTaskDTO(obj);
     await this.pubSub.publish('taskAdded', { taskAdded: dto });
     return dto;
@@ -52,8 +50,9 @@ export class TasksService {
   async update(input: UpdateTaskInput): Promise<TaskDTO> {
     const doc = await this.taskModel
       .findByIdAndUpdate(input.id, input, { new: true })
-      .lean({ virtuals: true })
       .exec();
+    console.log('updated', doc);
+
     if (!doc) throw new NotFoundException('Task not found');
     const dto = toTaskDTO(doc as TaskLean);
     await this.pubSub.publish('taskUpdated', { taskUpdated: dto });
@@ -64,10 +63,7 @@ export class TasksService {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid task id');
     }
-    const doc = await this.taskModel
-      .findByIdAndDelete(id)
-      .lean({ virtuals: true })
-      .exec();
+    const doc = await this.taskModel.findByIdAndDelete(id).exec();
     if (!doc) throw new NotFoundException('Task not found');
     const dto = toTaskDTO(doc as TaskLean);
     await this.pubSub.publish('taskDeleted', { taskDeleted: dto });
@@ -80,6 +76,8 @@ export class TasksService {
     doc.completed = !doc.completed;
     await doc.save();
     const obj = doc.toObject({ virtuals: true }) as TaskLean;
+    console.log('toggle', obj);
+
     const dto = toTaskDTO(obj);
     await this.pubSub.publish('taskUpdated', { taskUpdated: dto });
     return dto;

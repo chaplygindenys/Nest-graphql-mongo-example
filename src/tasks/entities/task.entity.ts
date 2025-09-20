@@ -10,9 +10,9 @@ export class Task {
   @Field({ defaultValue: false })
   completed!: boolean;
 
-  @Field(() => Date)
-  createdAt!: Date;
+  @Field(() => Number)
+  createdAt!: number;
 
-  @Field(() => Date)
-  updatedAt!: Date;
+  @Field(() => Number)
+  updatedAt!: number;
 }

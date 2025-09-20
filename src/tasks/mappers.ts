@@ -5,6 +5,8 @@ import { TaskDocument } from './task.schema';
 // What a "lean" task looks like (with our 'id' virtual included):
 export type TaskLean = TaskDocument & {
   id: string;
+  title: string;
+  completed: boolean;
   createdAt: number;
   updatedAt: number;
 };
