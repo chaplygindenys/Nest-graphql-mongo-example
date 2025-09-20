@@ -13,7 +13,7 @@ scalar DateTime
 
 type Mutation {
   createTask(input: CreateTaskInput!): Task!
-  deleteTask(id: ID!): Boolean!
+  deleteTask(id: ID!): Task!
   toggleTask(id: ID!): Task!
   updateTask(input: UpdateTaskInput!): Task!
 }
@@ -21,6 +21,12 @@ type Mutation {
 type Query {
   task(id: ID!): Task!
   tasks: [Task!]!
+}
+
+type Subscription {
+  taskAdded: Task!
+  taskDeleted: Task!
+  taskUpdated: Task!
 }
 
 type Task {

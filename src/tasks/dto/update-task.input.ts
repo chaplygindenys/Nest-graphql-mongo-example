@@ -1,19 +1,17 @@
-import { Field, ID, InputType, PartialType } from '@nestjs/graphql';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
-import { CreateTaskInput } from './create-task.input';
+import { Field, ID, InputType } from '@nestjs/graphql';
+import { IsOptional, IsString } from 'class-validator';
 
 @InputType()
-export class UpdateTaskInput extends PartialType(CreateTaskInput) {
+export class UpdateTaskInput {
   @Field(() => ID)
-  id!: string; // <- add !
+  id!: string;
 
   @Field({ nullable: true })
-  @IsOptional()
   @IsString()
+  @IsOptional()
   title?: string;
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsBoolean()
   completed?: boolean;
 }

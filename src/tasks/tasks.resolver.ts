@@ -1,4 +1,13 @@
-import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Inject } from '@nestjs/common';
+import {
+  Args,
+  ID,
+  Mutation,
+  Query,
+  Resolver,
+  Subscription,
+} from '@nestjs/graphql';
+import { PubSub } from 'graphql-subscriptions';
 import { CreateTaskInput } from './dto/create-task.input';
 import { UpdateTaskInput } from './dto/update-task.input';
 import { Task } from './entities/task.entity';
@@ -6,7 +15,10 @@ import { TasksService } from './tasks.service';
 
 @Resolver(() => Task)
 export class TasksResolver {
-  constructor(private readonly service: TasksService) {}
+  constructor(
+    private readonly service: TasksService,
+    @Inject('PUB_SUB') private readonly pubSub: PubSub,
+  ) {}
 
   @Query(() => [Task], { name: 'tasks' })
   findAll() {
@@ -19,12 +31,16 @@ export class TasksResolver {
   }
 
   @Mutation(() => Task)
-  createTask(@Args('input') input: CreateTaskInput) {
+  createTask(
+    @Args('input', { type: () => CreateTaskInput }) input: CreateTaskInput,
+  ) {
     return this.service.create(input);
   }
 
   @Mutation(() => Task)
-  updateTask(@Args('input') input: UpdateTaskInput) {
+  updateTask(
+    @Args('input', { type: () => UpdateTaskInput }) input: UpdateTaskInput,
+  ) {
     return this.service.update(input);
   }
 
@@ -36,5 +52,18 @@ export class TasksResolver {
   @Mutation(() => Task)
   toggleTask(@Args('id', { type: () => ID }) id: string) {
     return this.service.toggle(id);
+  }
+
+  @Subscription(() => Task, { name: 'taskAdded' })
+  taskAdded() {
+    return this.pubSub.asyncIterableIterator('taskAdded');
+  }
+  @Subscription(() => Task, { name: 'taskUpdated' })
+  taskUpdated() {
+    return this.pubSub.asyncIterableIterator('taskUpdated');
+  }
+  @Subscription(() => Task, { name: 'taskDeleted' })
+  taskDeleted() {
+    return this.pubSub.asyncIterableIterator('taskDeleted');
   }
 }

@@ -1,70 +1,87 @@
+// src/tasks/tasks.service.ts
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model } from 'mongoose';
+import { PubSub } from 'graphql-subscriptions';
+import { Model, isValidObjectId } from 'mongoose';
 import { CreateTaskInput } from './dto/create-task.input';
+import { TaskDTO } from './dto/task.dto';
 import { UpdateTaskInput } from './dto/update-task.input';
-import { Task } from './entities/task.entity';
-import { TaskDocument } from './task.schema';
+import { TaskLean, toTaskDTO } from './mappers';
+import { TaskDocument, TaskModel } from './task.schema';
 
 @Injectable()
 export class TasksService {
   constructor(
-    @InjectModel('Task') private readonly taskModel: Model<TaskDocument>,
+    @InjectModel(TaskModel.name) // <-- same name here
+    private readonly taskModel: Model<TaskDocument>,
+
+    @Inject('PUB_SUB') private readonly pubSub: PubSub,
   ) {}
 
-  async findAll() {
-    return this.taskModel.find().sort({ createdAt: -1 }).exec();
-  }
-
-  async findOne(id: string) {
-    const doc = await this.taskModel.findById(id).exec();
-    if (!doc) throw new NotFoundException('Task not found');
-    return doc;
-  }
-
-  async create(input: CreateTaskInput) {
-    return this.taskModel.create(input);
-  }
-
-  async update(input: UpdateTaskInput) {
-    const { id, ...patch } = input;
-    const updated = await this.taskModel
-      .findByIdAndUpdate(id, patch, { new: true })
+  async findAll(): Promise<TaskDTO[]> {
+    const docs = await this.taskModel
+      .find()
+      .sort({ createdAt: -1 })
+      .lean({ virtuals: true }) // ensure 'id' + timestamps on plain objects
       .exec();
-    if (!updated) throw new NotFoundException('Task not found');
-    return updated;
+    return (docs as TaskLean[]).map(toTaskDTO);
   }
 
-  async remove(id: string): Promise<Task> {
-    if (!isValidObjectId(id)) {
-      console.log('Invalid id:', id);
+  async findOne(id: string): Promise<TaskDTO> {
+    const doc = await this.taskModel
+      .findById(id)
+      .lean({ virtuals: true })
+      .exec();
+    if (!doc) throw new NotFoundException('Task not found');
+    return toTaskDTO(doc as TaskLean);
+  }
 
+  async create(input: CreateTaskInput): Promise<TaskDTO> {
+    const created = await this.taskModel.create(input);
+    const obj = created.toObject({ virtuals: true }) as TaskLean;
+    const dto = toTaskDTO(obj);
+    await this.pubSub.publish('taskAdded', { taskAdded: dto });
+    return dto;
+  }
+
+  async update(input: UpdateTaskInput): Promise<TaskDTO> {
+    const doc = await this.taskModel
+      .findByIdAndUpdate(input.id, input, { new: true })
+      .lean({ virtuals: true })
+      .exec();
+    if (!doc) throw new NotFoundException('Task not found');
+    const dto = toTaskDTO(doc as TaskLean);
+    await this.pubSub.publish('taskUpdated', { taskUpdated: dto });
+    return dto;
+  }
+
+  async remove(id: string): Promise<TaskDTO> {
+    if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid task id');
     }
-
-    console.log("remove", { id });
-
-    const doc = await this.taskModel.findById(id);
-
-    const res = await this.taskModel.findByIdAndDelete(id).exec();
-
-    if (!doc) {
-      console.log('Task not found', doc, res);
-      throw new NotFoundException('Task not found');
-    }
-
-    // If you use virtual id/toJSON in your schema this is fine to return directly.
-    // Otherwise: return doc.toObject();
-    return doc as unknown as Task;
+    const doc = await this.taskModel
+      .findByIdAndDelete(id)
+      .lean({ virtuals: true })
+      .exec();
+    if (!doc) throw new NotFoundException('Task not found');
+    const dto = toTaskDTO(doc as TaskLean);
+    await this.pubSub.publish('taskDeleted', { taskDeleted: dto });
+    return dto;
   }
-  async toggle(id: string) {
-    const task = await this.findOne(id);
-    task.completed = !task.completed;
-    await task.save();
-    return task;
+
+  async toggle(id: string): Promise<TaskDTO> {
+    const doc = await this.taskModel.findById(id).exec();
+    if (!doc) throw new NotFoundException('Task not found');
+    doc.completed = !doc.completed;
+    await doc.save();
+    const obj = doc.toObject({ virtuals: true }) as TaskLean;
+    const dto = toTaskDTO(obj);
+    await this.pubSub.publish('taskUpdated', { taskUpdated: dto });
+    return dto;
   }
 }

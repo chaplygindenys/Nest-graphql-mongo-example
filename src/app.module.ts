@@ -21,8 +21,11 @@ import { TasksModule } from './tasks/tasks.module';
       playground: false, // disable old Playground
       introspection: true, // keep for dev
       // csrfPrevention: false, // (optional) you can disable CSRF in dev
-     // csrfPrevention: false, // <— dev only
-
+      // csrfPrevention: false, // <— dev only
+      subscriptions: {
+        // Use modern graphql-ws protocol
+        'graphql-ws': true,
+      },
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     MongooseModule.forRootAsync({

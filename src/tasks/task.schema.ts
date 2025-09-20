@@ -1,16 +1,20 @@
-import { Document, Schema } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { HydratedDocument } from "mongoose";
 
-export interface TaskDocument extends Document {
-  title: string;
-  completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+// task.schema.ts (Nest Mongoose)
+@Schema({
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+})
+export class TaskModel {
+  @Prop({required:true}) title!: string;
+  @Prop({ default: false }) completed!: boolean;
 }
 
-export const TaskSchema = new Schema<TaskDocument>(
-  {
-    title: { type: String, required: true, trim: true },
-    completed: { type: Boolean, default: false },
-  },
-  { timestamps: true },
-);
+export type TaskDocument = HydratedDocument<TaskModel>;
+export const TaskSchema = SchemaFactory.createForClass(TaskModel);
+
+TaskSchema.virtual('id').get(function () {
+  return this._id.toHexString();
+});
