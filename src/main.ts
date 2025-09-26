@@ -32,6 +32,9 @@ async function bootstrap() {
     next();
   });
 
+  // GraphQLModule.forRoot({ context: ({ req, res }) => ({ req, res }), ... })
+
+
   await app.listen(process.env.PORT || 3000);
   console.log(
     `🚀 Server at http://localhost:${process.env.PORT || 3000}/graphql`,

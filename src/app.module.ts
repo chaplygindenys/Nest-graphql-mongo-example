@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
 
 @Module({
@@ -26,6 +27,14 @@ import { TasksModule } from './tasks/tasks.module';
         // Use modern graphql-ws protocol
         'graphql-ws': true,
       },
+      context: ({ req, extra, connectionParams }) => {
+        // put token in a consistent place for JwtGuard
+        const authorization =
+          req?.headers?.authorization ??
+          connectionParams?.authorization ??
+          extra?.authorization;
+        return { req, authorization, connectionParams, extra };
+      },
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     MongooseModule.forRootAsync({
@@ -41,6 +50,7 @@ import { TasksModule } from './tasks/tasks.module';
       },
     }),
     TasksModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
