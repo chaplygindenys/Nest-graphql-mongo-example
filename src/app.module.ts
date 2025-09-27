@@ -8,6 +8,8 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
+import type { GqlContextArg } from './common/types';
+
 
 @Module({
   imports: [
@@ -27,7 +29,7 @@ import { TasksModule } from './tasks/tasks.module';
         // Use modern graphql-ws protocol
         'graphql-ws': true,
       },
-      context: ({ req, extra, connectionParams }) => {
+      context: ({ req, extra, connectionParams }: GqlContextArg) => {
         // put token in a consistent place for JwtGuard
         const authorization =
           req?.headers?.authorization ??
