@@ -1,17 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
+// src/users/user.schema.ts (or wherever your user model is)
 @Schema({ timestamps: true })
 export class UserModel {
-  // Google OAuth fields
-  @Prop({ required: true, unique: true, index: true }) googleId!: string;
-  @Prop() name?: string;
-  @Prop() picture?: string;
-  @Prop({ required: true, unique: true, index: true }) email!: string;
+  @Prop({ required: true, unique: true })
+  githubId!: string; // <-- unique
 
-  // GitHub OAuth fields
-  @Prop({ index: true, unique: true }) githubId!: string;
-  @Prop() login?: string;
+  @Prop() username?: string;
+  @Prop() displayName?: string;
+  @Prop() email?: string;
   @Prop() avatarUrl?: string;
 }
 

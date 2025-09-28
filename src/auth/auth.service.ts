@@ -1,63 +1,51 @@
+// src/auth/auth.service.ts
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserDocument, UserModel } from '../users/user.schema';
+import { UserModel } from '../users/user.schema';
+import type { GithubProfileLite } from './github.strategy';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(UserModel.name) private readonly users: Model<UserDocument>,
-    private readonly jwt: JwtService,
+    @InjectModel(UserModel.name) private users: Model<UserModel>,
+    private jwt: JwtService,
   ) {}
 
-  async findOrCreateFromGoogle(profile: {
-    id: string;
-    email: string;
-    name?: string;
-    picture?: string;
-  }) {
-    let user = await this.users.findOne({ googleId: profile.id }).exec();
-    if (!user) {
-      user = await this.users.create({
-        googleId: profile.id,
-        email: profile.email,
-        name: profile.name,
-        picture: profile.picture,
-      });
-    } else {
-      // optional: keep profile fresh
-      const changed =
-        (profile.name && user.name !== profile.name) ||
-        (profile.picture && user.picture !== profile.picture) ||
-        user.email !== profile.email;
-      if (changed) {
-        user.name = profile.name ?? user.name;
-        user.picture = profile.picture ?? user.picture;
-        user.email = profile.email;
-        await user.save();
-      }
+  async fromGithubProfile(p: GithubProfileLite) {
+    // 1) find-or-create user by githubId
+    let user = await this.users.findOne({ githubId: p.githubId }).lean();
+    if (!user?.githubId) {
+      user = await this.users
+        .create({
+          githubId: p.githubId,
+          username: p.username ?? undefined,
+          displayName: p.displayName ?? undefined,
+          email: p.email ?? undefined,
+          avatarUrl: p.avatarUrl ?? undefined,
+        })
+        .then((u) => u.toObject());
     }
-    return user;
-  }
 
-  async fromGithubProfile(profile: any) {
-    const gid = String(profile.id);
-    let user = await this.users.findOne({ githubId: gid }).exec();
-    if (!user) {
-      user = await this.users.create({
-        githubId: gid,
-        login: profile.username,
-        name: profile.displayName,
-        email: profile.emails?.[0]?.value,
-        avatarUrl: profile.photos?.[0]?.value,
-      });
-    }
-    const token = await this.jwt.signAsync({ sub: user.id, githubId: gid });
+    if (!user) throw new Error('Could not create/find user after Github login');
+
+    // 2) sign JWT: put your internal user id into `sub`
+    const payload = {
+      sub: user._id.toString(), // <-- used as userId in your guards/resolvers
+      githubId: user.githubId, // optional, keep if you want
+    };
+
+    const token = await this.jwt.signAsync(payload);
+
     return { user, token };
   }
 
-  sign(user: UserDocument) {
-    return this.jwt.sign({ sub: user.id, email: user.email });
+  sign(user: { _id: string; githubId?: string; username?: string }) {
+    return this.jwt.sign({
+      sub: user._id.toString(),
+      githubId: user.githubId,
+      username: user.username,
+    });
   }
 }
