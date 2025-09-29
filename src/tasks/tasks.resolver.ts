@@ -17,9 +17,7 @@ import { UpdateTaskInput } from './dto/update-task.input';
 import { Task } from './entities/task.entity';
 import { TasksService } from './tasks.service';
 
-import type { GqlContextArg as GqlContext } from '../common/types';
-
-type JwtUser = { userId: string; email?: string };
+import type { GqlContextArg as GqlContext, JwtUser } from '../common/types';
 
 @Injectable()
 class LogArgsPipe implements PipeTransform {
@@ -40,7 +38,11 @@ export class TasksResolver {
   // ---------- Queries ----------
   @Query(() => [Task])
   tasks(@CurrentUser() user: JwtUser) {
-    return this.service.findAllByUser(user.userId);
+    console.log('[resolver] tasks user:', user);
+    const tasks = this.service.findAllByUser(user.id);
+    console.log('[resolver] tasks count:', tasks);
+
+    return tasks;
   }
 
   @Query(() => Task, { name: 'task' })
@@ -51,7 +53,9 @@ export class TasksResolver {
   // ---------- Mutations ----------
   @Mutation(() => Task)
   createTask(@Args('input') input: CreateTaskInput, @CurrentUser() u: JwtUser) {
-    return this.service.create(input, u.userId);
+    console.log('[resolver] createTask input:', input, u);
+    const userId = u.id;
+    return this.service.create(input, userId);
   }
 
   @Mutation(() => Task)
@@ -63,7 +67,7 @@ export class TasksResolver {
     console.log('[resolver] updateTask input:', input);
     console.log('[resolver] raw variables (HTTP):', ctx.req?.body?.variables);
     console.log('[resolver] conn params (WS):', ctx.connectionParams);
-    return this.service.update(input, u.userId);
+    return this.service.update(input, u.id);
   }
 
   @Mutation(() => Task)
@@ -71,7 +75,7 @@ export class TasksResolver {
     @Args('id', { type: () => ID }) id: string,
     @CurrentUser() u: JwtUser,
   ) {
-    return this.service.remove(id, u.userId);
+    return this.service.remove(id, u.id);
   }
 
   // Optional, if you still keep it:

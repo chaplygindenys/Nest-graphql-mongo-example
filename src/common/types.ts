@@ -4,6 +4,7 @@ import type { ConnectionInitMessage } from 'graphql-ws';
 import type { IncomingHttpHeaders, IncomingMessage } from 'http';
 
 export type JwtUser = {
+  id: string; // user id
   sub: string; // user id
   email?: string | null;
   name?: string | null;

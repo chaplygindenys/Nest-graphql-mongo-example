@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { PubSub } from 'graphql-subscriptions';
-import { Model, Types, isValidObjectId } from 'mongoose';
+import { Model, isValidObjectId } from 'mongoose';
 import { CreateTaskInput } from './dto/create-task.input';
 import { TaskDTO } from './dto/task.dto';
 import { UpdateTaskInput } from './dto/update-task.input';
@@ -24,11 +24,15 @@ export class TasksService {
   ) {}
 
   async findAllByUser(userId: string) {
-    return this.taskModel
-      .find({ userId: new Types.ObjectId(userId) })
+    const tasks = await this.taskModel
+      .find({
+        userId: userId,
+      })
       .sort({ createdAt: -1 })
       .exec()
       .then((docs) => docs.map((d) => d.toObject({ virtuals: true })));
+
+    return tasks;
   }
 
   async findOne(id: string): Promise<TaskDTO> {
@@ -41,23 +45,15 @@ export class TasksService {
     const created = await this.taskModel.create({ ...input, userId });
     const obj = created.toObject({ virtuals: true, getters: true }) as TaskLean;
 
-    console.log('created', created, userId);
     const dto = toTaskDTO(obj);
     await this.pubSub.publish('taskAdded', { taskAdded: dto, userId });
     return dto;
   }
 
   async update(input: UpdateTaskInput, userId: string): Promise<TaskDTO> {
-    console.log('update input ', input, ' by user ', userId);
-
     const doc = await this.taskModel
-      .findOneAndUpdate(
-        { _id: input.id, userId: new Types.ObjectId(userId) },
-        input,
-        { new: true },
-      )
+      .findOneAndUpdate({ _id: input.id, userId: userId }, input, { new: true })
       .exec();
-    console.log('updated', doc);
 
     if (!doc) throw new NotFoundException('Task not found');
     const dto = toTaskDTO(doc as TaskLean);
@@ -70,7 +66,7 @@ export class TasksService {
       throw new BadRequestException('Invalid task id');
     }
     const doc = await this.taskModel
-      .findOneAndDelete({ _id: id, userId: new Types.ObjectId(userId) })
+      .findOneAndDelete({ _id: id, userId: userId })
       .exec();
     if (!doc) throw new NotFoundException('Task not found');
     const dto = toTaskDTO(doc as TaskLean);
@@ -84,7 +80,6 @@ export class TasksService {
     doc.completed = !doc.completed;
     await doc.save();
     const obj = doc.toObject({ virtuals: true }) as TaskLean;
-    console.log('toggle', obj);
 
     const dto = toTaskDTO(obj);
     await this.pubSub.publish('taskUpdated', { taskUpdated: dto });
