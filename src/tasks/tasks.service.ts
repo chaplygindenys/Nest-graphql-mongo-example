@@ -23,12 +23,16 @@ export class TasksService {
     @Inject('PUB_SUB') private readonly pubSub: PubSub,
   ) {}
 
-  async findAll(): Promise<TaskDTO[]> {
-    const docs = await this.taskModel.find().sort({ createdAt: -1 });
+  async findAllByUser(userId: string) {
+    const tasks = await this.taskModel
+      .find({
+        userId: userId,
+      })
+      .sort({ createdAt: -1 })
+      .exec()
+      .then((docs) => docs.map((d) => d.toObject({ virtuals: true })));
 
-    console.log('virtuals', docs);
-
-    return (docs as TaskLean[]).map(toTaskDTO);
+    return tasks;
   }
 
   async findOne(id: string): Promise<TaskDTO> {
@@ -37,38 +41,36 @@ export class TasksService {
     return toTaskDTO(doc as TaskLean);
   }
 
-  async create(input: CreateTaskInput): Promise<TaskDTO> {
-    const created = await this.taskModel.create(input);
+  async create(input: CreateTaskInput, userId: string): Promise<TaskDTO> {
+    const created = await this.taskModel.create({ ...input, userId });
     const obj = created.toObject({ virtuals: true, getters: true }) as TaskLean;
 
-    console.log('created', created);
     const dto = toTaskDTO(obj);
-    await this.pubSub.publish('taskAdded', { taskAdded: dto });
+    await this.pubSub.publish('taskAdded', { taskAdded: dto, userId });
     return dto;
   }
 
-  async update(input: UpdateTaskInput): Promise<TaskDTO> {
-    console.log('update input ', input);
-
+  async update(input: UpdateTaskInput, userId: string): Promise<TaskDTO> {
     const doc = await this.taskModel
-      .findByIdAndUpdate(input.id, input, { new: true })
+      .findOneAndUpdate({ _id: input.id, userId: userId }, input, { new: true })
       .exec();
-    console.log('updated', doc);
 
     if (!doc) throw new NotFoundException('Task not found');
     const dto = toTaskDTO(doc as TaskLean);
-    await this.pubSub.publish('taskUpdated', { taskUpdated: dto });
+    await this.pubSub.publish('taskUpdated', { taskUpdated: dto, userId });
     return dto;
   }
 
-  async remove(id: string): Promise<TaskDTO> {
+  async remove(id: string, userId: string): Promise<TaskDTO> {
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid task id');
     }
-    const doc = await this.taskModel.findByIdAndDelete(id).exec();
+    const doc = await this.taskModel
+      .findOneAndDelete({ _id: id, userId: userId })
+      .exec();
     if (!doc) throw new NotFoundException('Task not found');
     const dto = toTaskDTO(doc as TaskLean);
-    await this.pubSub.publish('taskDeleted', { taskDeleted: dto });
+    await this.pubSub.publish('taskDeleted', { taskDeleted: dto, userId });
     return dto;
   }
 
@@ -78,7 +80,6 @@ export class TasksService {
     doc.completed = !doc.completed;
     await doc.save();
     const obj = doc.toObject({ virtuals: true }) as TaskLean;
-    console.log('toggle', obj);
 
     const dto = toTaskDTO(obj);
     await this.pubSub.publish('taskUpdated', { taskUpdated: dto });

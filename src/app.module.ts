@@ -6,6 +6,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AuthModule } from './auth/auth.module';
+import type { GqlContextArg } from './common/types';
 import { TasksModule } from './tasks/tasks.module';
 
 @Module({
@@ -21,10 +23,21 @@ import { TasksModule } from './tasks/tasks.module';
       playground: false, // disable old Playground
       introspection: true, // keep for dev
       // csrfPrevention: false, // (optional) you can disable CSRF in dev
-      // csrfPrevention: false, // <— dev only
+      // IMPORTANT: no built-in subscriptions with AS4
       subscriptions: {
-        // Use modern graphql-ws protocol
-        'graphql-ws': true,
+        'graphql-ws': false,
+        'subscriptions-transport-ws': false,
+      },
+      // this context runs for each request (query/mutation/subscription)
+      // we use it to add auth info to the context
+
+      context: ({ req, extra, connectionParams }: GqlContextArg) => {
+        // put token in a consistent place for JwtGuard
+        const authorization =
+          req?.headers?.authorization ??
+          connectionParams?.authorization ??
+          extra?.authorization;
+        return { req, authorization, connectionParams, extra };
       },
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
@@ -41,6 +54,7 @@ import { TasksModule } from './tasks/tasks.module';
       },
     }),
     TasksModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

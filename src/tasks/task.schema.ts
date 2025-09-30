@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 // task.schema.ts (Nest Mongoose)
 @Schema({
@@ -19,6 +19,12 @@ export class TaskModel {
   // store as numbers (ms)
   @Prop({ type: Number }) createdAt!: number;
   @Prop({ type: Number }) updatedAt!: number;
+
+  @Prop({ type: Types.ObjectId, ref: 'UserModel', index: true, required: true })
+  userId!: Types.ObjectId;
 }
 export type TaskDocument = HydratedDocument<TaskModel>;
 export const TaskSchema = SchemaFactory.createForClass(TaskModel);
+
+// Optional: speedy query by owner + createdAt
+TaskSchema.index({ userId: 1, createdAt: -1 });
