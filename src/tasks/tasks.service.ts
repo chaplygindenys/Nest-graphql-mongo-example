@@ -21,7 +21,20 @@ export class TasksService {
     private readonly taskModel: Model<TaskDocument>,
 
     @Inject('PUB_SUB') private readonly pubSub: PubSub,
-  ) {}
+  ) {
+    // Attach debug listeners for all triggers you use
+    for (const trigger of ['taskAdded', 'taskUpdated', 'taskDeleted']) {
+      // note: PubSub.subscribe exists in graphql-subscriptions and returns a sub id
+      this.pubSub
+        .subscribe(trigger, (payload) => {
+          console.log(`[PUBSUB → emit] ${trigger}:`, JSON.stringify(payload));
+        })
+        .then((id) => {
+          console.log(`[PUBSUB] listener #${id} attached for ${trigger}`);
+        })
+        .catch(console.error);
+    }
+  }
 
   async findAllByUser(userId: string) {
     const tasks = await this.taskModel
@@ -47,6 +60,7 @@ export class TasksService {
 
     const dto = toTaskDTO(obj);
     await this.pubSub.publish('taskAdded', { taskAdded: dto, userId });
+
     return dto;
   }
 

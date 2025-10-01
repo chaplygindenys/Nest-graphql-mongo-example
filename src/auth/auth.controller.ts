@@ -12,6 +12,12 @@ export class AuthController {
     private readonly cfg: ConfigService,
   ) {}
 
+  // auth.controller.ts
+  @Get('ok')
+  aok() {
+    return { ok: true, ts: Date.now() };
+  }
+
   @Get('github')
   @UseGuards(AuthGuard('github'))
   async github() {
