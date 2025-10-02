@@ -37,6 +37,8 @@ export class TasksService {
   }
 
   async findAllByUser(userId: string) {
+    console.log('[service] findAllByUser userId:', userId);
+
     const tasks = await this.taskModel
       .find({
         userId: userId,
@@ -44,7 +46,7 @@ export class TasksService {
       .sort({ createdAt: -1 })
       .exec()
       .then((docs) => docs.map((d) => d.toObject({ virtuals: true })));
-
+    console.log('[service] findAllByUser tasks:', tasks.length);
     return tasks;
   }
 

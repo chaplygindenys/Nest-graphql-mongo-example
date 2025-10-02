@@ -38,9 +38,10 @@ export class TasksResolver {
 
   // ---------- Queries ----------
   @Query(() => [Task])
-  tasks(@CurrentUser() user: JwtUser) {
-    console.log('[resolver] tasks user:', user);
-    const tasks = this.service.findAllByUser(user.id);
+  tasks(@CurrentUser() u: JwtUser) {
+    const userId = u.userId ?? u.id;
+    console.log('[resolver] tasks userId:', userId);
+    const tasks = this.service.findAllByUser(userId);
     console.log('[resolver] tasks count:', tasks);
 
     return tasks;
