@@ -5,6 +5,7 @@ import type { IncomingHttpHeaders, IncomingMessage } from 'http';
 
 export type JwtUser = {
   id: string; // user id
+  userId?: string; // alias for id
   sub: string; // user id
   email?: string | null;
   name?: string | null;

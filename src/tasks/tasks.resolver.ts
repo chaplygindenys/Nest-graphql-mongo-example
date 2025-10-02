@@ -55,7 +55,9 @@ export class TasksResolver {
   @Mutation(() => Task)
   createTask(@Args('input') input: CreateTaskInput, @CurrentUser() u: JwtUser) {
     console.log('[resolver] createTask input:', input, u);
-    const userId = u.id;
+    const userId = u.userId ?? u.id;
+    console.log('[resolver] createTask userId:', { userId });
+
     return this.service.create(input, userId);
   }
 
@@ -68,7 +70,9 @@ export class TasksResolver {
     console.log('[resolver] updateTask input:', input);
     console.log('[resolver] raw variables (HTTP):', ctx.req?.body?.variables);
     console.log('[resolver] conn params (WS):', ctx.connectionParams);
-    return this.service.update(input, u.id);
+    const userId = u.userId ?? u.id;
+    console.log('[resolver] updateTask userId:', { userId });
+    return this.service.update(input, userId);
   }
 
   @Mutation(() => Task)
@@ -76,13 +80,8 @@ export class TasksResolver {
     @Args('id', { type: () => ID }) id: string,
     @CurrentUser() u: JwtUser,
   ) {
-    return this.service.remove(id, u.id);
-  }
-
-  // Optional, if you still keep it:
-  @Mutation(() => Task)
-  toggleTask(@Args('id', { type: () => ID }) id: string) {
-    return this.service.toggle(id);
+    const userId = u.userId ?? u.id;
+    return this.service.remove(id, userId);
   }
 
   // ---------- Subscriptions ----------

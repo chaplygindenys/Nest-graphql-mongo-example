@@ -9,7 +9,6 @@ input CreateTaskInput {
 type Mutation {
   createTask(input: CreateTaskInput!): Task!
   deleteTask(id: ID!): Task!
-  toggleTask(id: ID!): Task!
   updateTask(input: UpdateTaskInput!): Task!
 }
 

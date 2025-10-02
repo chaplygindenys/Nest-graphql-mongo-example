@@ -55,6 +55,8 @@ export class TasksService {
   }
 
   async create(input: CreateTaskInput, userId: string): Promise<TaskDTO> {
+    console.log('[service] create input:', input, 'userId:', userId);
+
     const created = await this.taskModel.create({ ...input, userId });
     const obj = created.toObject({ virtuals: true, getters: true }) as TaskLean;
 
@@ -85,18 +87,6 @@ export class TasksService {
     if (!doc) throw new NotFoundException('Task not found');
     const dto = toTaskDTO(doc as TaskLean);
     await this.pubSub.publish('taskDeleted', { taskDeleted: dto, userId });
-    return dto;
-  }
-
-  async toggle(id: string): Promise<TaskDTO> {
-    const doc = await this.taskModel.findById(id).exec();
-    if (!doc) throw new NotFoundException('Task not found');
-    doc.completed = !doc.completed;
-    await doc.save();
-    const obj = doc.toObject({ virtuals: true }) as TaskLean;
-
-    const dto = toTaskDTO(obj);
-    await this.pubSub.publish('taskUpdated', { taskUpdated: dto });
     return dto;
   }
 }
