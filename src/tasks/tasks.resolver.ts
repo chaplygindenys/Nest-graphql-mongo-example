@@ -119,25 +119,61 @@ export class TasksResolver {
 
   @Subscription(() => Task, {
     name: 'taskUpdated',
-    filter: (payload: { userId?: string }, _vars: unknown, ctx: GqlContext) => {
+    filter: (payload: any, _vars: unknown, ctx: GqlContext) => {
+      // user id the event was published for
+      const payloadUserId = payload?.userId;
+
+      // user id from WS auth or HTTP guard
       const ctxUserId =
-        (ctx.req as any)?.user?.userId ?? (ctx.extra as any)?.user?.userId;
-      return !!payload.userId && ctxUserId === payload.userId;
+        getUserId((ctx as any)?.extra?.user) ??
+        getUserId((ctx as any)?.req?.user);
+
+      console.log('[SUB] taskUpdated filter called', {
+        payloadUserId,
+        ctxUserId,
+      });
+
+      return !!payloadUserId && payloadUserId === ctxUserId;
     },
   })
-  taskUpdated() {
+  taskUpdated(@Context() ctx: GqlContext, @CurrentUser() u: JwtUser) {
+    console.log(
+      u,
+      '[SUB] taskUpdated handler attached for',
+      getUserId((ctx as any)?.extra?.user) ??
+        getUserId((ctx as any)?.req?.user) ??
+        getUserId(u),
+    );
     return this.pubSub.asyncIterableIterator('taskUpdated');
   }
 
   @Subscription(() => Task, {
     name: 'taskDeleted',
-    filter: (payload: { userId?: string }, _vars: unknown, ctx: GqlContext) => {
+    filter: (payload: any, _vars: unknown, ctx: GqlContext) => {
+      // user id the event was published for
+      const payloadUserId = payload?.userId;
+
+      // user id from WS auth or HTTP guard
       const ctxUserId =
-        (ctx.req as any)?.user?.userId ?? (ctx.extra as any)?.user?.userId;
-      return !!payload.userId && ctxUserId === payload.userId;
+        getUserId((ctx as any)?.extra?.user) ??
+        getUserId((ctx as any)?.req?.user);
+
+      console.log('[SUB] taskDeleted filter called', {
+        payloadUserId,
+        ctxUserId,
+      });
+
+      return !!payloadUserId && payloadUserId === ctxUserId;
     },
   })
-  taskDeleted() {
+  taskDeleted(@Context() ctx: GqlContext, @CurrentUser() u: JwtUser) {
+    console.log(
+      u,
+      '[SUB] taskDeleted handler attached for',
+      getUserId((ctx as any)?.extra?.user) ??
+        getUserId((ctx as any)?.req?.user) ??
+        getUserId(u),
+    );
     return this.pubSub.asyncIterableIterator('taskDeleted');
   }
 }

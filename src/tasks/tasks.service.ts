@@ -67,6 +67,8 @@ export class TasksService {
   }
 
   async update(input: UpdateTaskInput, userId: string): Promise<TaskDTO> {
+    console.log('[service] update input:', input, 'userId:', userId);
+
     const doc = await this.taskModel
       .findOneAndUpdate({ _id: input.id, userId: userId }, input, { new: true })
       .exec();
@@ -78,6 +80,8 @@ export class TasksService {
   }
 
   async remove(id: string, userId: string): Promise<TaskDTO> {
+    console.log('[service] remove id:', id, 'userId:', userId);
+
     if (!isValidObjectId(id)) {
       throw new BadRequestException('Invalid task id');
     }
