@@ -6,6 +6,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { GraphQLModule } from '@nestjs/graphql';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import type { GqlContextArg } from './common/types';
 import { TasksModule } from './tasks/tasks.module';
@@ -56,5 +58,7 @@ import { TasksModule } from './tasks/tasks.module';
     TasksModule,
     AuthModule,
   ],
+  controllers: [AppController],
+  providers: [AppService], // <-- Add this line
 })
 export class AppModule {}

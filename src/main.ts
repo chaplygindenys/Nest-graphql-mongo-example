@@ -49,67 +49,7 @@ async function bootstrap() {
   // ...
 
   const wss = new WebSocketServer({ server: httpServer, path: '/graphql' });
-  /**
-  useServer<Context, Extra>(
-    {
-      schema,
-      keepAlive: 12000,
 
-      onConnect: (ctx) => {
-        const ip = ctx.extra.request.socket.remoteAddress;
-        console.log('[WS] connect from', ip);
-      },
-
-      onSubscribe: async (ctx, msg) => {
-        const raw = (ctx.connectionParams?.Authorization ??
-          ctx.connectionParams?.authorization ??
-          '') as string;
-
-        const token = raw.replace(/^Bearer\s+/i, '');
-        let user: any = null;
-        if (token) {
-          try {
-            user = jwt.verify(token); // { userId, ... }
-          } catch (e) {
-            console.warn('[WS] bad JWT in connectionParams');
-          }
-        }
-        (ctx.extra as any).user = user; // available in resolvers via ctx.extra
-        console.log(
-          '[WS] subscribe op=%s user=%s',
-          msg.payload.operationName ?? '-',
-          user?.userId ?? '-',
-        );
-        return undefined; // proceed
-      },
-
-      onNext: (_ctx, _msg, _args, result) => {
-        console.log(
-          '[WS] delivered data keys:',
-          Object.keys((result as any).data ?? {}),
-        );
-      },
-
-      onError: (_ctx, _msg, errors) => {
-        console.error('[WS] error:', errors);
-      },
-
-      onClose: (ctx, code, reason) => {
-        console.log('[WS] closed', code, reason.toString());
-      },
-
-      // what resolvers receive as "ctx"
-      context: (ctx) => ({
-        req: ctx.extra.request,
-        extra: ctx.extra,
-        authorization: (ctx.connectionParams?.Authorization ??
-          ctx.connectionParams?.authorization ??
-          '') as string,
-      }),
-    },
-    wss,
-  );
-*/
   useServer(
     {
       schema,
